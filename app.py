@@ -1,4 +1,5 @@
 from flask import Flask, render_template, request, jsonify
+<<<<<<< HEAD
 from whoosh.index import open_dir
 from whoosh.qparser import QueryParser
 from whoosh.query import Or
@@ -7,14 +8,21 @@ app = Flask(__name__)
 INDEX_DIR = "indexdir"
 
 
+
 @app.route('/')
 def index():
+
+    """
+    渲染主页面
+    """
+>>>>>>> origin/master
     return render_template('index.html')
 
 
 @app.route('/search')
 def search():
     """
+<<<<<<< HEAD
     处理搜索请求的 API 接口 (使用 Whoosh)
     """
     query_str = request.args.get('keyword', '')
@@ -59,4 +67,20 @@ def search():
 
 
 if __name__ == '__main__':
+=======
+    处理搜索请求的 API 接口
+    """
+    query = request.args.get('keyword', '')
+
+    # 根据查询关键字在模拟数据库中查找结果
+    # .get(query, []) 如果找不到关键字，返回一个空列表
+    results = mock_db.get(query, [])
+
+    # 以 JSON 格式返回数据
+    return jsonify(results)
+
+
+if __name__ == '__main__':
+    # 启动 Flask 应用，开启调试模式
+>>>>>>> origin/master
     app.run(debug=True)
