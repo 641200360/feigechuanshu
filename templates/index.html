@@ -4,19 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>飞搜侠</title>
+    <!-- 确保 CSS 文件路径正确 -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <div class="container">
         <header>
-            <span class="breadcrumb">首页 / 搜索 / 生财有术</span>
+            <span class="breadcrumb">首页 / 搜索</span>
         </header>
 
         <main>
             <div class="search-box">
                 <img src="https://testingcf.jsdelivr.net/gh/uxiaohan/PicGO/20220906-200921.png" alt="Logo" class="logo">
                 <form id="search-form">
-                    <input type="text" id="search-input" value="生财有术" placeholder="搜索...">
+                    <input type="text" id="search-input" value="生财有术" placeholder="搜索..." autocomplete="off">
                     <button type="submit">搜索</button>
                 </form>
             </div>
@@ -36,93 +37,102 @@
             </div>
 
             <div id="results-container">
-                <!-- 搜索结果将在这里动态插入 -->
+                <!-- 搜索结果将通过 JavaScript 动态插入到这里 -->
             </div>
         </main>
     </div>
 
+    <!-- JavaScript 代码 -->
     <script>
-        // 当文档加载完成后执行
+        // 等待整个 HTML 文档加载完成后再执行脚本
         document.addEventListener('DOMContentLoaded', function() {
             const form = document.getElementById('search-form');
             const input = document.getElementById('search-input');
             const resultsContainer = document.getElementById('results-container');
             const hotSearchTags = document.querySelectorAll('.hot-searches .tag');
 
-            // 提交表单时的处理函数
-            async function handleSearch(event) {
-                // 阻止表单的默认提交行为，防止页面刷新
-                if (event) {
-                    event.preventDefault();
-                }
-
-                const query = input.value.trim(); // 获取输入框的值并去除两端空格
+            // 封装一个函数来处理搜索逻辑
+            async function performSearch() {
+                const query = input.value.trim(); // 获取并清理输入框的关键词
+                
                 if (!query) {
-                    resultsContainer.innerHTML = ''; // 如果没有输入，则清空结果
+                    resultsContainer.innerHTML = ''; // 如果没有关键词，清空结果区域
                     return;
                 }
+                
+                // 显示“加载中”提示，提升用户体验
+                resultsContainer.innerHTML = '<p>正在搜索中...</p>';
 
                 try {
-                    // 使用 Fetch API 向后端的 /search 接口发送请求
+                    // 使用 Fetch API 向后端 /search 接口发送 GET 请求
+                    // encodeURIComponent 确保特殊字符（如空格）能被正确编码
                     const response = await fetch(`/search?keyword=${encodeURIComponent(query)}`);
+                    
                     if (!response.ok) {
-                        throw new Error('网络请求失败');
+                        // 如果服务器返回错误状态码 (如 500)，则抛出错误
+                        throw new Error(`网络请求失败，状态码: ${response.status}`);
                     }
-                    const results = await response.json(); // 解析返回的 JSON 数据
-
-                    // 渲染搜索结果
+                    
+                    const results = await response.json(); // 解析后端返回的 JSON 数据
+                    
+                    // 调用渲染函数来显示结果
                     renderResults(results);
 
                 } catch (error) {
+                    // 如果请求过程中发生任何错误，在控制台打印并向用户显示提示
                     console.error('搜索时发生错误:', error);
-                    resultsContainer.innerHTML = '<p class="error">加载结果失败，请稍后再试。</p>';
+                    resultsContainer.innerHTML = '<p class="error">加载结果失败，请检查网络或稍后再试。</p>';
                 }
             }
 
-            // 将搜索结果渲染到页面上
+            // 封装一个函数专门用于渲染结果
             function renderResults(results) {
-                // 先清空之前的结果
-                resultsContainer.innerHTML = '';
+                resultsContainer.innerHTML = ''; // 先清空之前的所有内容
 
-                if (results.length === 0) {
+                if (!results || results.length === 0) {
                     resultsContainer.innerHTML = '<p>没有找到相关结果。</p>';
                     return;
                 }
 
-                // 遍历每一个结果并创建 HTML 元素
+                // 遍历每一个搜索结果对象
                 results.forEach(item => {
                     const resultItem = document.createElement('div');
                     resultItem.className = 'result-item';
 
+                    // 使用模板字符串构建每个结果项的 HTML 结构
                     resultItem.innerHTML = `
                         <div class="item-header">
                             <img src="https://sf1-lark-file-storage.oss-cn-beijing.aliyuncs.com/20220614/2357/feishu-logo.4jvne6jk.svg" alt="Feishu Logo" class="item-logo">
                             <h3>${item.title}</h3>
                         </div>
-                        <a href="${item.url}" class="item-url">${item.url}</a>
+                        <a href="${item.url}" target="_blank" rel="noopener noreferrer" class="item-url">${item.url}</a>
                         <p class="item-description">${item.description}</p>
                         <div class="item-actions">
-                            <button class="action-btn">打开文档</button>
+                            <button class="action-btn" onclick="window.open('${item.url}', '_blank')">打开文档</button>
                             <button class="action-btn secondary">复制链接</button>
                         </div>
                     `;
+                    // 将创建好的结果项添加到容器中
                     resultsContainer.appendChild(resultItem);
                 });
             }
 
-            // 为热门搜索标签添加点击事件
+            // 监听搜索表单的提交事件
+            form.addEventListener('submit', function(event) {
+                event.preventDefault(); // 阻止表单默认的提交刷新页面的行为
+                performSearch();
+            });
+            
+            // 为所有热门搜索标签添加点击事件
             hotSearchTags.forEach(tag => {
                 tag.addEventListener('click', () => {
-                    input.value = tag.textContent; // 将标签内容填入搜索框
-                    handleSearch(); // 立即执行搜索
+                    input.value = tag.textContent; // 将标签的文字放入搜索框
+                    performSearch(); // 立即执行搜索
                 });
             });
 
-            // 监听表单的提交事件
-            form.addEventListener('submit', handleSearch);
-
-            // 页面加载后立即执行一次默认搜索
-            handleSearch();
+            // 页面加载完成后，自动对输入框中的默认值执行一次搜索
+            performSearch();
         });
     </script>
 </body>
