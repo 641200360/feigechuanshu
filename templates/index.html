@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>飞搜侠</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <span class="breadcrumb">首页 / 搜索 / 生财有术</span>
+        </header>
+
+        <main>
+            <div class="search-box">
+                <img src="https://testingcf.jsdelivr.net/gh/uxiaohan/PicGO/20220906-200921.png" alt="Logo" class="logo">
+                <form id="search-form">
+                    <input type="text" id="search-input" value="生财有术" placeholder="搜索...">
+                    <button type="submit">搜索</button>
+                </form>
+            </div>
+
+            <div class="hot-searches">
+                <span>热门搜索</span>
+                <button class="tag">入门</button>
+                <button class="tag">股票</button>
+                <button class="tag">tiktok</button>
+                <button class="tag">夸克</button>
+                <button class="tag">小红书引流</button>
+                <button class="tag">梯子</button>
+                <button class="tag">blender</button>
+                <button class="tag">亚马逊</button>
+                <button class="tag">生财有术</button>
+                <button class="tag">大模型</button>
+            </div>
+
+            <div id="results-container">
+                <!-- 搜索结果将在这里动态插入 -->
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 当文档加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('search-form');
+            const input = document.getElementById('search-input');
+            const resultsContainer = document.getElementById('results-container');
+            const hotSearchTags = document.querySelectorAll('.hot-searches .tag');
+
+            // 提交表单时的处理函数
+            async function handleSearch(event) {
+                // 阻止表单的默认提交行为，防止页面刷新
+                if (event) {
+                    event.preventDefault();
+                }
+
+                const query = input.value.trim(); // 获取输入框的值并去除两端空格
+                if (!query) {
+                    resultsContainer.innerHTML = ''; // 如果没有输入，则清空结果
+                    return;
+                }
+
+                try {
+                    // 使用 Fetch API 向后端的 /search 接口发送请求
+                    const response = await fetch(`/search?keyword=${encodeURIComponent(query)}`);
+                    if (!response.ok) {
+                        throw new Error('网络请求失败');
+                    }
+                    const results = await response.json(); // 解析返回的 JSON 数据
+
+                    // 渲染搜索结果
+                    renderResults(results);
+
+                } catch (error) {
+                    console.error('搜索时发生错误:', error);
+                    resultsContainer.innerHTML = '<p class="error">加载结果失败，请稍后再试。</p>';
+                }
+            }
+
+            // 将搜索结果渲染到页面上
+            function renderResults(results) {
+                // 先清空之前的结果
+                resultsContainer.innerHTML = '';
+
+                if (results.length === 0) {
+                    resultsContainer.innerHTML = '<p>没有找到相关结果。</p>';
+                    return;
+                }
+
+                // 遍历每一个结果并创建 HTML 元素
+                results.forEach(item => {
+                    const resultItem = document.createElement('div');
+                    resultItem.className = 'result-item';
+
+                    resultItem.innerHTML = `
+                        <div class="item-header">
+                            <img src="https://sf1-lark-file-storage.oss-cn-beijing.aliyuncs.com/20220614/2357/feishu-logo.4jvne6jk.svg" alt="Feishu Logo" class="item-logo">
+                            <h3>${item.title}</h3>
+                        </div>
+                        <a href="${item.url}" class="item-url">${item.url}</a>
+                        <p class="item-description">${item.description}</p>
+                        <div class="item-actions">
+                            <button class="action-btn">打开文档</button>
+                            <button class="action-btn secondary">复制链接</button>
+                        </div>
+                    `;
+                    resultsContainer.appendChild(resultItem);
+                });
+            }
+
+            // 为热门搜索标签添加点击事件
+            hotSearchTags.forEach(tag => {
+                tag.addEventListener('click', () => {
+                    input.value = tag.textContent; // 将标签内容填入搜索框
+                    handleSearch(); // 立即执行搜索
+                });
+            });
+
+            // 监听表单的提交事件
+            form.addEventListener('submit', handleSearch);
+
+            // 页面加载后立即执行一次默认搜索
+            handleSearch();
+        });
+    </script>
+</body>
+</html>
